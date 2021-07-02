@@ -26,11 +26,18 @@ object Sindy {
       .toDF(colNames = "N_Nation_Key", "N_Name", "N_Region_Key", "N_Comment")
       .as[(String, String, String, String)]
 
-    region.show()
-    nation.show()
+    val supplier = spark
+      .read
+      .option("inferSchema", "false")
+      .option("header", "true")
+      .option("delimiter",";")
+      .csv(path = inputs(2))
+      .toDF(colNames="S_SUPPKEY","S_NAME","S_ADDRESS","S_NATIONKEY","S_PHONE","S_ACCTBAL","S_COMMENT")
+      .as[(String, String, String, String, String, String, String)]
 
     val regionColumns = region.columns
     val nationColumns = nation.columns
+    val supplierColumns = supplier.columns
 
     val regionFlat = region
       .flatMap(f => List(f._1, f._2, f._3) zip regionColumns)
@@ -43,7 +50,14 @@ object Sindy {
 
     nationFlat.show()
 
-    test.union(test2).show(numRows = 200)
+    val attributeValuePairs = regionFlat.union(nationFlat).union(supplierFlat)
+
+    val key_sets = attributeValuePairs
+      .map(f => (f._1, Set(f._2))).rdd.reduceByKey((s1, s2) => s1.union(s2))
+
+    val moin = key_sets.toDF().drop("_1")
+    // Todo: continue hier : val flatMoin = moin.flatMap(set => List(set.get(0), set.)))
+
 
     /*val tables = spark
       .read
