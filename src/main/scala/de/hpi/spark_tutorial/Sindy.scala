@@ -32,11 +32,16 @@ object Sindy {
     val regionColumns = region.columns
     val nationColumns = nation.columns
 
-    val test = region
+    val regionFlat = region
       .flatMap(f => List(f._1, f._2, f._3) zip regionColumns)
 
-    val test2 = nation
+    val nationFlat = nation
       .flatMap(f => List(f._1, f._2, f._3, f._4) zip nationColumns)
+
+    val supplierFlat = supplier
+      .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7) zip supplierColumns)
+
+    nationFlat.show()
 
     test.union(test2).show(numRows = 200)
 
