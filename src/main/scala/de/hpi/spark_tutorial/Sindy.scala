@@ -10,12 +10,10 @@ object Sindy {
 
     val region = spark
       .read
-      .option("inferSchema", "false")
-      .option("header", "true")
-      .option("delimiter", ";")
-      .csv(path = inputs(0))
-      .toDF(colNames = "R_Region_Key", "R_Name", "R_Comment")
-      .as[(String, String, String)]
+      .options(Map("inferSchema"->"true","delimiter"->";", "header"-> "true"))
+      .csv(path = inputs.head)
+      //.toDF(colNames = "R_Region_Key", "R_Name", "R_Comment")
+      //.as[(String, String, String)]
 
     val nation = spark
       .read
@@ -35,22 +33,20 @@ object Sindy {
       .toDF(colNames="S_SUPPKEY","S_NAME","S_ADDRESS","S_NATIONKEY","S_PHONE","S_ACCTBAL","S_COMMENT")
       .as[(String, String, String, String, String, String, String)]
 
-    val regionColumns = region.columns
     val nationColumns = nation.columns
     val supplierColumns = supplier.columns
 
-    val regionFlat = region
-      .flatMap(f => List(f._1, f._2, f._3) zip regionColumns)
+    val regionFlat = region.flatMap(row => row.toSeq.toList zip region.schema.fieldNames)
 
     val nationFlat = nation
-      .flatMap(f => List(f._1, f._2, f._3, f._4) zip nationColumns)
+      .flatMap(f => f.productIterator.toList zip nationColumns)
 
     val supplierFlat = supplier
       .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7) zip supplierColumns)
 
     nationFlat.show()
 
-    val attributeValuePairs = regionFlat.union(nationFlat).union(supplierFlat)
+    val attributeValuePairs = regionFlat.as[(String, String)].union(nationFlat).union(supplierFlat)
 
     val key_sets = attributeValuePairs
       .map(f => (f._1, Set(f._2))).rdd.reduceByKey((s1, s2) => s1.union(s2))
