@@ -8,45 +8,29 @@ object Sindy {
 
     import spark.implicits._
 
-    val region = spark
-      .read
-      .options(Map("inferSchema"->"true","delimiter"->";", "header"-> "true"))
-      .csv(path = inputs.head)
-      //.toDF(colNames = "R_Region_Key", "R_Name", "R_Comment")
-      //.as[(String, String, String)]
+    def csv_to_rdd(path: String): DataFrame = {
+      spark
+        .read
+        .options(Map("inferSchema" -> "true", "delimiter" -> ";", "header" -> "true"))
+        .csv(path = path)
+    }
 
-    val nation = spark
-      .read
-      .option("inferSchema", "false")
-      .option("header", "true")
-      .option("delimiter", ";")
-      .csv(path = inputs(1))
-      .toDF(colNames = "N_Nation_Key", "N_Name", "N_Region_Key", "N_Comment")
-      .as[(String, String, String, String)]
+    val region = csv_to_rdd(inputs.head)
+    val nation = csv_to_rdd(inputs(1))
+    val supplier = csv_to_rdd(inputs(2))
 
-    val supplier = spark
-      .read
-      .option("inferSchema", "false")
-      .option("header", "true")
-      .option("delimiter",";")
-      .csv(path = inputs(2))
-      .toDF(colNames="S_SUPPKEY","S_NAME","S_ADDRESS","S_NATIONKEY","S_PHONE","S_ACCTBAL","S_COMMENT")
-      .as[(String, String, String, String, String, String, String)]
+    val regionFlat = region.as[(String, String, String)].
+      flatMap(f => f.productIterator.asInstanceOf[Iterator[String]].toList zip region.schema.fieldNames)
 
-    val nationColumns = nation.columns
-    val supplierColumns = supplier.columns
+    val nationFlat = nation.as[(String, String, String, String)]
+      .flatMap(f => f.productIterator.asInstanceOf[Iterator[String]].toList zip nation.schema.fieldNames)
 
-    val regionFlat = region.flatMap(row => row.toSeq.toList zip region.schema.fieldNames)
-
-    val nationFlat = nation
-      .flatMap(f => f.productIterator.toList zip nationColumns)
-
-    val supplierFlat = supplier
-      .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7) zip supplierColumns)
+    val supplierFlat = supplier.as[(String, String, String, String, String, String, String)]
+      .flatMap(f => f.productIterator.asInstanceOf[Iterator[String]].toList zip supplier.schema.fieldNames)
 
     nationFlat.show()
 
-    val attributeValuePairs = regionFlat.as[(String, String)].union(nationFlat).union(supplierFlat)
+    val attributeValuePairs = regionFlat.union(nationFlat).union(supplierFlat)
 
     val key_sets = attributeValuePairs
       .map(f => (f._1, Set(f._2))).rdd.reduceByKey((s1, s2) => s1.union(s2))
