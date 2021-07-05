@@ -50,9 +50,15 @@ object Sindy {
 
     val key_sets = attributeValuePairs
       .map(f => (f._1, Set(f._2))).rdd.reduceByKey((s1, s2) => s1.union(s2))
+      .toDF().drop("_1").as[(List[String])]
 
-    val moin = key_sets.toDF().drop("_1")
-    // Todo: continue hier : val flatMoin = moin.flatMap(set => List(set.get(0), set.)))
+    val inclusionLists = key_sets.
+      flatMap(f => f.map(element => (element, f.filterNot(x => x == element))))
+
+    val reducedInclusionList = inclusionLists.rdd.reduceByKey((s1, s2) => s1.intersect(s2)).toDF()
+      .as[(String, List[String])].filter(x => x._2.nonEmpty).collect()
+
+    reducedInclusionList.foreach(f => println(f._1 + " < " + f._2.toArray.mkString(", ")))
 
 
     /*val tables = spark
