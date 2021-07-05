@@ -1,6 +1,6 @@
 package de.hpi.spark_tutorial
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object Sindy {
 
