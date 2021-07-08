@@ -1,6 +1,6 @@
 package de.hpi.spark_tutorial
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession, Dataset}
 
 object Sindy {
 
@@ -8,7 +8,7 @@ object Sindy {
 
     import spark.implicits._
 
-    def csv_to_rdd(path: String): DataFrame = {
+    def csv_to_df(path: String): DataFrame = {
       spark
         .read
         .options(Map("inferSchema" -> "true", "delimiter" -> ";", "header" -> "true"))
@@ -54,7 +54,8 @@ object Sindy {
     val ordersFlat = orders.as[(String, String, String, String, String, String, String, String, String)]
       .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7, f._8, f._9) zip ordersFieldNames)
 
-    val attributeValuePairs = regionFlat.union(nationFlat).union(supplierFlat)
+    val attributeValuePairs = regionFlat.union(nationFlat).union(supplierFlat).union(customerFlat).union(partFlat)
+      .union(lineitemsFlat).union(ordersFlat)
 
     val key_sets = attributeValuePairs
       .map(f => (f._1, Set(f._2))).rdd.reduceByKey((s1, s2) => s1.union(s2))
