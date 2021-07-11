@@ -46,7 +46,6 @@ object Sindy {
 
     val partFlat = part.as[(String, String, String, String, String, String, String, String, String)]
       .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7, f._8, f._9) zip partFieldNames)
-    nationFlat.show()
 
     val lineitemsFlat = lineitem.as[(String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)]
       .flatMap(f => List(f._1, f._2, f._3, f._4, f._5, f._6, f._7, f._8, f._9, f._10, f._11, f._12, f._13, f._14, f._15, f._16) zip lineitemFieldNames)
